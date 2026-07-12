@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMS - Employees</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50">
+  <!-- Auth Check Inline -->
+  <script>
+    if(localStorage.getItem('ems_auth')!== 'true' &&!window.location.pathname.includes('index.html')) {
+      window.location.href = 'index.html';
+    }
+    const user = JSON.parse(localStorage.getItem('ems_user') || '{}');
+  </script>
+
+  <div class="flex min-h-screen">
+    <!-- Mobile Overlay -->
+    <div id="overlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-40" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 transform -translate-x-full lg:translate-x-0 transition duration-300">
+      <div class="p-6 border-b border-slate-700">
+        <h2 class="text-2xl font-bold text-white">EMS</h2>
+        <p class="text-slate-400 text-sm">Employee System</p>
+      </div>
+      <nav class="p-4 space-y-2">
+        <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800">📊 Dashboard</a>
+        <a href="attendance.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800">⏰ Attendance</a>
+        <a href="leave.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800">📅 Leave</a>
+        <a href="employees.html" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white">👥 Employees</a>
+        <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-slate-800 mt-8">🚪 Logout</button>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 lg:ml-64">
+      <div class="topbar px-4 sm:px-8 py-4 bg-white shadow-sm flex justify-between items-center">
+        <div class="flex items-center gap-4">
+          <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-indigo-600 text-white rounded-lg">☰</button>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Employee Management</h2>
+        </div>
+        <span class="text-sm sm:text-base text-slate-600">Welcome, <span id="userName">Admin</span></span>
+      </div>
+
+      <div class="p-4 sm:p-8">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">Employees</h1>
+          <button onclick="openModal('empModal')" class="w-full sm:w-auto px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition shadow-lg hover:scale-105">
+            + Add Employee
+          </button>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[800px]">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Emp ID</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Name</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Email</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Department</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Position</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="empTable" class="divide-y divide-slate-200">
+                <tr id="emp-EMP001" class="hover:bg-slate-50">
+                  <td class="px-6 py-4">EMP001</td>
+                  <td class="px-6 py-4 font-medium">Raj Kumar</td>
+                  <td class="px-6 py-4">raj@company.com</td>
+                  <td class="px-6 py-4">IT</td>
+                  <td class="px-6 py-4">Developer</td>
+                  <td class="px-6 py-4">
+                    <button onclick="editEmp('EMP001')" class="text-blue-600 hover:text-blue-800 mr-3 font-medium">Edit</button>
+                    <button onclick="deleteEmp('EMP001')" class="text-red-600 hover:text-red-800 font-medium">Delete</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Employee Modal -->
+  <div id="empModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold text-slate-800" id="modalTitle">Add Employee</h3>
+        <button onclick="closeModal('empModal')" class="text-slate-400 hover:text-slate-600 text-2xl">×</button>
+      </div>
+      <form id="empForm" class="space-y-4">
+        <input type="hidden" id="empId" />
+        <input type="text" id="empName" placeholder="Full Name" class="w-full px-4 py-3 border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600" required />
+        <input type="email" id="empEmail" placeholder="Email" class="w-full px-4 py-3 border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600" required />
+        <input type="text" id="empDept" placeholder="Department" class="w-full px-4 py-3 border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600" required />
+        <input type="text" id="empPosition" placeholder="Position" class="w-full px-4 py-3 border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600" required />
+        <div class="flex gap-3 mt-6">
+          <button type="button" onclick="closeModal('empModal')" class="flex-1 py-3 bg-slate-200 text-slate-700 rounded-xl font-semibold hover:bg-slate-300">Cancel</button>
+          <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 shadow-lg">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ALL JS HERE - No external file needed -->
+  <script>
+    let editId = null;
+
+    // Set username
+    document.getElementById('userName').textContent = user.name || 'Admin';
+
+    // Sidebar Toggle
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('overlay');
+      sidebar.classList.toggle('-translate-x-full');
+      overlay.classList.toggle('hidden');
+    }
+
+    // Modal Open/Close
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+      // Add Employee click panna form clear pananum
+      if(id === 'empModal' &&!editId) {
+        document.getElementById('empForm').reset();
+        document.getElementById('empId').value = '';
+        document.getElementById('modalTitle').textContent = 'Add Employee';
+      }
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+      editId = null;
+    }
+
+    // Logout
+    function logout() {
+      localStorage.removeItem('ems_auth');
+      localStorage.removeItem('ems_user');
+      window.location.href = 'index.html';
+    }
+
+    // Edit Employee
+    function editEmp(id) {
+      editId = id;
+      const row = document.getElementById('emp-' + id);
+      document.getElementById('modalTitle').textContent = 'Edit Employee';
+      document.getElementById('empId').value = id;
+      document.getElementById('empName').value = row.cells[1].textContent.trim();
+      document.getElementById('empEmail').value = row.cells[2].textContent.trim();
+      document.getElementById('empDept').value = row.cells[3].textContent.trim();
+      document.getElementById('empPosition').value = row.cells[4].textContent.trim();
+      openModal('empModal');
+    }
+
+    // Delete Employee
+    async function deleteEmp(id) {
+  if(confirm('Delete this employee?')) {
+    showToast('Deleting...', 'success');
+    await apiCall('/api/employees/delete');
+    document.getElementById('emp-' + id).remove();
+    showToast('Employee deleted! 🗑️', 'success');
+  }
+}
+
+   // Form Submit - Add/Update
+document.getElementById('empForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  showToast('Saving...', 'success'); // 1. Udane loader kaamum
+
+  const id = document.getElementById('empId').value || 'EMP' + Math.floor(Math.random()*9000+1000);
+  const name = document.getElementById('empName').value.trim();
+  const email = document.getElementById('empEmail').value.trim();
+  const dept = document.getElementById('empDept').value.trim();
+  const position = document.getElementById('empPosition').value.trim();
+
+  if(editId) {
+    // Update existing
+    await apiCall('/api/employees/update'); // 2. Mock API wait
+    const row = document.getElementById('emp-' + editId);
+    row.cells[1].textContent = name;
+    row.cells[2].textContent = email;
+    row.cells[3].textContent = dept;
+    row.cells[4].textContent = position;
+    editId = null;
+    document.getElementById('modalTitle').textContent = 'Add Employee';
+    showToast('Employee updated successfully! ✅', 'success'); // 3. Success toast
+  } else {
+    // Add new
+    await apiCall('/api/employees/add'); // 2. Mock API wait
+    const table = document.getElementById('empTable');
+    const row = table.insertRow(0);
+    row.id = 'emp-' + id;
+    row.className = 'hover:bg-slate-50';
+    row.innerHTML = `
+      <td class="px-6 py-4">${id}</td>
+      <td class="px-6 py-4 font-medium">${name}</td>
+      <td class="px-6 py-4">${email}</td>
+      <td class="px-6 py-4">${dept}</td>
+      <td class="px-6 py-4">${position}</td>
+      <td class="px-6 py-4">
+        <button onclick="editEmp('${id}')" class="text-blue-600 hover:text-blue-800 mr-3 font-medium">Edit</button>
+        <button onclick="deleteEmp('${id}')" class="text-red-600 hover:text-red-800 font-medium">Delete</button>
+      </td>
+    `;
+    showToast('Employee added successfully! ID: ' + id, 'success'); // 3. Success toast
+  }
+
+  closeModal('empModal');
+  this.reset();
+});
+  </script>
+  <script src="js/app.js"></script>
+</body>
+</html>

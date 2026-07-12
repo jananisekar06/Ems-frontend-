@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMS - Tasks</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50">
+  <script>
+    if(localStorage.getItem('ems_auth')!== 'true' &&!window.location.pathname.includes('index.html')) {
+      window.location.href = 'index.html';
+    }
+    const user = JSON.parse(localStorage.getItem('ems_user') || '{}');
+  </script>
+
+  <div class="flex min-h-screen">
+    <div id="overlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-40" onclick="toggleSidebar()"></div>
+
+    <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 transform -translate-x-full lg:translate-x-0 transition duration-300">
+      <div class="p-6 border-b border-slate-700">
+        <h2 class="text-2xl font-bold text-white">EMS</h2>
+        <p class="text-slate-400 text-sm">Employee System</p>
+      </div>
+      <nav class="p-4 space-y-2">
+        <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800">📊 Dashboard</a>
+        <a href="attendance.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800">⏰ Attendance</a>
+        <a href="leave.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800">📅 Leave</a>
+        <a href="employees.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800">👥 Employees</a>
+        <a href="tasks.html" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white">✅ Tasks</a>
+        <a href="hr.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800">💼 HR</a>
+        <a href="profile.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800">👤 Profile</a>
+        <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-slate-800 mt-8">🚪 Logout</button>
+      </nav>
+    </div>
+
+    <div class="flex-1 lg:ml-64">
+      <div class="topbar px-4 sm:px-8 py-4 bg-white shadow-sm flex justify-between items-center">
+        <div class="flex items-center gap-4">
+          <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-indigo-600 text-white rounded-lg">☰</button>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Task Management</h2>
+        </div>
+        <span class="text-sm sm:text-base text-slate-600">Welcome, <span id="userName">Admin</span></span>
+      </div>
+
+      <div class="p-4 sm:p-8">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">Tasks</h1>
+          <button onclick="openTaskModal()" class="w-full sm:w-auto px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 shadow-lg hover:scale-105">
+            + Add Task
+          </button>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[700px]">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Task</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Assigned To</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Due Date</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Priority</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Status</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Action</th>
+                </tr>
+              </thead>
+              <tbody id="taskTable" class="divide-y divide-slate-200">
+                <tr id="task-1" class="hover:bg-slate-50">
+                  <td class="px-6 py-4 font-medium">Monthly Report</td>
+                  <td class="px-6 py-4">Raj Kumar</td>
+                  <td class="px-6 py-4">2026-06-25</td>
+                  <td class="px-6 py-4"><span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">High</span></td>
+                  <td class="px-6 py-4"><span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm">In Progress</span></td>
+                  <td class="px-6 py-4">
+                    <button onclick="completeTask('task-1')" class="text-green-600 hover:text-green-800 font-medium">Complete</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="taskModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold text-slate-800">Add New Task</h3>
+        <button onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-600 text-2xl">×</button>
+      </div>
+      <form id="taskForm" class="space-y-4">
+        <input type="text" id="taskTitle" placeholder="Task Title" class="w-full px-4 py-3 border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600" required />
+        <select id="taskEmp" class="w-full px-4 py-3 border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600" required>
+          <option value="">Assign To</option>
+          <option>Raj Kumar</option>
+          <option>Priya S</option>
+          <option>Arun M</option>
+        </select>
+        <input type="date" id="taskDue" class="w-full px-4 py-3 border-slate-300 rounded-xl" required />
+        <select id="taskPriority" class="w-full px-4 py-3 border-slate-300 rounded-xl" required>
+          <option>High</option>
+          <option>Medium</option>
+          <option>Low</option>
+        </select>
+        <textarea id="taskDesc" placeholder="Description..." class="w-full px-4 py-3 border-slate-300 rounded-xl h-20"></textarea>
+        <div class="flex gap-3 mt-6">
+          <button type="button" onclick="closeTaskModal()" class="flex-1 py-3 bg-slate-200 text-slate-700 rounded-xl font-semibold">Cancel</button>
+          <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-semibold">Create Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('userName').textContent = user.name || 'Admin';
+    document.getElementById('taskDue').valueAsDate = new Date();
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('-translate-x-full');
+      document.getElementById('overlay').classList.toggle('hidden');
+    }
+
+    function openTaskModal() {
+      document.getElementById('taskModal').classList.remove('hidden');
+      document.getElementById('taskForm').reset();
+      document.getElementById('taskDue').valueAsDate = new Date();
+    }
+
+    function closeTaskModal() {
+      document.getElementById('taskModal').classList.add('hidden');
+    }
+
+    function logout() {
+      localStorage.removeItem('ems_auth');
+      localStorage.removeItem('ems_user');
+      window.location.href = 'index.html';
+    }
+
+    function completeTask(id) {
+      const row = document.getElementById(id);
+      row.cells[4].innerHTML = '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">Completed</span>';
+      row.cells[5].innerHTML = '<span class="text-slate-400">Done</span>';
+      alert('Task marked as completed!');
+    }
+
+    document.getElementById('taskForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const title = document.getElementById('taskTitle').value;
+      const emp = document.getElementById('taskEmp').value;
+      const due = document.getElementById('taskDue').value;
+      const priority = document.getElementById('taskPriority').value;
+
+      let priorityColor = 'bg-yellow-100 text-yellow-700';
+      if(priority === 'High') priorityColor = 'bg-red-100 text-red-700';
+      if(priority === 'Low') priorityColor = 'bg-green-100 text-green-700';
+
+      const table = document.getElementById('taskTable');
+      const row = table.insertRow(0);
+      const id = 'task-' + Date.now();
+      row.id = id;
+      row.className = 'hover:bg-slate-50';
+      row.innerHTML = `
+        <td class="px-6 py-4 font-medium">${title}</td>
+        <td class="px-6 py-4">${emp}</td>
+        <td class="px-6 py-4">${due}</td>
+        <td class="px-6 py-4"><span class="${priorityColor} px-3 py-1 rounded-full text-sm">${priority}</span></td>
+        <td class="px-6 py-4"><span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm">Pending</span></td>
+        <td class="px-6 py-4">
+          <button onclick="completeTask('${id}')" class="text-green-600 hover:text-green-800 font-medium">Complete</button>
+        </td>
+      `;
+      closeTaskModal();
+      alert('Task created successfully!');
+    });
+  </script>
+</body>
+</html>
